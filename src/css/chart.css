@@ -1,0 +1,10 @@
+.ring-chart {
+  margin-top:20px
+}
+
+.ring-chart-box {
+  display: inline-block;
+  min-width: 400px;
+  min-height: 400px;
+  margin-right: 50px;
+}

@@ -1,0 +1,129 @@
+nav ul {
+  display: flex;
+  list-style: none;
+  padding: 0;
+  gap: 1rem;
+  flex-wrap: wrap;
+  position: absolute;
+  top:0;
+  z-index: 99;
+
+
+}
+
+nav ul li a {
+  color: var(--color-primary);
+  text-decoration: none;
+  height:inherit;
+  line-height:40px;
+}
+
+nav ul ul li a {
+  color: white;
+  padding: 5px;
+
+  }
+
+nav ul li a:hover,
+nav ul li a.active {
+  color: #E8474C;
+}
+
+nav ul li a.active {
+  font-weight: bold;
+}
+
+nav {
+border-bottom: 1px solid black;
+    margin-bottom: 14px;
+   height:50px;
+   position: fixed;
+  top:0;
+  width:100%;
+  z-index:1003;
+  background-color: #FFF;
+  text-wrap: nowrap;
+
+
+}
+
+nav ul ul {
+  display: none;
+  list-style-type: none;
+  padding: 0;
+  top: 28px;
+  left: 0;
+  position: absolute;
+  background-color: #8bc1ee;
+  color:black;
+}
+
+nav ul li:hover > ul {
+  display: block;
+}
+
+nav ul li {
+  position: relative;
+  min-width: 130px;
+  height:40px;
+  line-height:40px;
+}
+
+nav ul ul li {
+  margin: 0;
+  width: auto;
+}
+
+/* Hamburger menu styles */
+.menu-toggle {
+  display: none;
+  cursor: pointer;
+}
+
+.hamburger {
+  width: 30px;
+  height: 3px;
+  background-color: black;
+  margin: 6px 0;
+}
+
+@media screen and (width <= 900px) {
+nav {height:auto;
+  width:100vw}
+
+nav ul {
+  position:static;
+  width:100vw;
+  height:100%;
+  display: none;
+  flex-direction: column;
+}
+
+.menu-toggle {
+  display: block;
+}
+
+nav ul li {
+  float: none;
+  height:auto;
+  width:100%;
+}
+
+nav ul li a {
+  text-align: left;
+  padding: 10px;
+}
+
+nav ul ul {
+  position: static;
+  display: block;
+}
+
+nav ul ul li a {
+  padding-left: 30px;
+}
+
+.menu.active {
+  display: flex;
+}
+}

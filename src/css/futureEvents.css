@@ -1,0 +1,61 @@
+.future-events {
+  position: absolute;
+  top: 20px;
+  right: 10px;
+  z-index:3000;
+
+}
+
+.future-event {
+    clear:right;
+    position: relative;
+    width: 200px; /* Adjust as needed */
+    padding: 10px;
+    height: 200px;
+    overflow: hidden;
+    background-color: #f9f9f9;
+    border: 1px solid #ccc;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.close-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: #ff5c5c;
+    color: white;
+    border: none;
+    width: 25px;
+    height: 25px;
+    padding:0;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 25px;
+    text-align: center;
+}
+
+.id, .name, .description, .time_start, .firma, .firm_id {
+    display: block;
+    margin-bottom: 10px;
+}
+
+.name {font-weight: bold;}
+
+.id {display:none}
+
+.description {
+    white-space: no-wrap; /* Preserve line breaks */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%; /* Adjust as needed */
+    padding-bottom:10px;
+
+}
+@media screen and (width <= 600px) {
+
+.future-event {
+    width:100%
+}
+}

@@ -1,0 +1,93 @@
+.filter-bar {
+  position: fixed;
+    top: 50px;
+    left:0;
+    width:100%;
+    z-index:1002;
+    background-color: #FFF;
+    text-align:right;
+    padding-top: 10px;
+    height: 54px;
+  }
+
+.filter-bar input,.filter-bar button {
+  display: inline-block;
+  margin-right: 10px;
+  }
+
+section.filter {
+  display:flex;
+  width: 100%;
+  flex-flow: wrap row;
+  gap: 10px;
+  position: fixed;
+  z-index: 1001;
+  top: 50px;
+  padding: 0;
+  background: white;
+
+}
+
+section.filter .filter-item input,section.filter .filter-item button {
+width:auto;
+font-size: 0.9rem;
+padding: 0.5rem;
+margin: 0.5rem 0;
+border-radius: 0.15rem;
+border-width: 1px;
+border-style: solid;
+
+}
+
+section.filter .filter-item label {
+width:auto;
+font-size: 0.9rem;
+}
+
+section.filter .filter-item label::after {
+  content: ' : ';
+
+  }
+
+  section.filter  .aplly {
+    align-self: flex-end;
+    font-size: 1em;
+  }
+
+  section.filter  .aplly label::after {
+    content: '';
+  }
+
+  .filter-close-button {
+    position: absolute;
+    top:10px;
+    right:0;
+  }
+
+  .filter-ex {
+    background: url('filter_list.svg') no-repeat #0000;
+    width:40px;;
+    height:30px;
+    background-position-y: 4px;
+  }
+
+  @media screen and (width <= 768px) {
+  .filter-bar {
+    text-align: left;
+    position: fixed;
+    padding-left: 0;
+    left: 25px;
+
+    }
+
+    .filter-bar input.search {
+    margin-left:0;
+    left:0;
+    width: 110px;
+  }
+  .filter-ex,.clear-input-filter-btn {padding: 0.5em 1em;}
+  .clear-input-filter-btn {
+    overflow-x: hidden;
+    padding: 0.5em 1em;}
+
+  }

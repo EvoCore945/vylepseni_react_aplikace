@@ -1,0 +1,19 @@
+.exportForm section {width:100%;border-bottom:1px solid black;display: flex;
+flex-wrap: wrap;
+gap: 20px;
+align-items: center
+}
+.exportForm section input[type=checkbox] {margin-right:5px}
+.exportForm section label {width: 100%;font-weight: 400;}
+.exportForm .hideSection {display: none;}
+.exportForm section legend {font-weight: bold;}
+.exportForm section legend::after {content: ": ";}
+
+@media (max-width: 768px) {
+  .exportForm input {
+       width: auto;
+  }
+  .exportForm section {
+    padding: 10px 0;
+  }
+}

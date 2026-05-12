@@ -1,0 +1,68 @@
+:root {
+  --color-main: rgb(20  20  20);
+  --color-main-light: rgb(92 92  92);
+  --color-disabled: rgb(206 206 206);
+  --color-disabled-light: rgb(245 245 245);
+  --color-dark-white: rgb(238 238 238);
+  --color-primary: #0284fe;
+  --color-primary-dark: #01408f;
+  --color-primary-light: #eef7ff;
+  --color-secondary: #36ab80;
+  --color-secondary-dark: #297e5f;
+  --color-secondary-light: #d0eddf;
+  --font-weight-thin: 100;
+  --font-weight-normal: 400;
+  --font-weight-bold: 700;
+
+  /* errors */
+  --color-error: #f03;
+  --color-error-dark: #800020;
+  --color-error-light: #f7e3e8;
+
+  /* transition defauls */
+  --transition-delay: 0;
+  --transition-func: ease-in-out;
+  --transition-duration: 0.4s;
+
+  font-family: "Work Sans", sans-serif;
+  font-size: 18px;
+  color: var(--color-main);
+  font-weight: var(--font-weight-normal);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.row {
+  margin-bottom: 1rem;
+}
+
+.hidden {display: none;}
+
+body {padding-top: 55px;}
+
+.no-data {
+  text-align: center;
+  padding:5em;
+  width:100%;
+  font-size:larger;
+}
+
+@media screen and (width <= 768px) {
+
+#app {overflow: auto;}
+body {padding-top: 25px;}
+
+table.firmlist th:nth-child(2) {
+  max-width: 200px;
+  word-wrap: break-word;
+  text-wrap: wrap;
+  cursor: pointer;
+  position: sticky;
+  left: 0;
+  background-color: #2196f3;
+}
+
+
+}

@@ -1,0 +1,10 @@
+{
+  "extends": "stylelint-config-standard",
+  "rules": {
+    "import-notation": null
+  },
+  "ignoreFiles": [
+    "node_modules/**/*.css",
+    "v3/**"    
+  ]
+}

@@ -1,0 +1,54 @@
+button.react-button {
+  border: 1px solid var(--color-main-light);
+  color: var(--color-main-light);
+  padding: 0.5rem 1rem;
+  background-color: white;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  font-weight: var(--font-weight-thin);
+  transition: all var(--transition-duration) var(--transition-func) var(--transition-delay);
+  transition-property: color, background-color, border-color;
+}
+
+button.react-button:hover {
+  border-color: var(--color-main-light);
+  color: var(--color-main-light);
+  background-color: var(--color-dark-white);
+}
+
+button.react-button:disabled {
+  border-color: var(--color-disabled) !important;
+  color: var(--color-disabled) !important;
+  background-color: var(--color-disabled-light) !important;
+  cursor: auto;
+}
+
+button.react-button.primary {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+button.react-button.primary:hover {
+  color: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
+  background-color: var(--color-primary-light);
+}
+
+button.react-button.secondary {
+  color: var(--color-secondary);
+  border-color: var(--color-secondary);
+}
+
+button.react-button.secondary:hover {
+  color: var(--color-secondary-dark);
+  border-color: var(--color-secondary-dark);
+  background-color: var(--color-secondary-light);
+}
+
+button.react-button.large {
+  font-size: 120%;
+}
+
+button.react-button.pill {
+  border-radius: 1.5rem;
+}

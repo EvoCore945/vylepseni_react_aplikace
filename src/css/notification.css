@@ -1,0 +1,29 @@
+
+.notification,
+.edit-firm-success {
+  width: 100%;
+  background-color: #4CAF50;
+  color: white;
+  text-align: center;
+  padding: 15px 0;
+  font-size: 22px;
+  box-shadow: 0 2px 4px rgba(0 0 0 / 20%);
+  z-index: 2000;
+  position: fixed;
+  top:0;
+  left:0;
+  cursor: pointer;
+}
+
+.edit-firm-error {
+  background-color: #F03;
+}
+
+/* Optional: Add some transition for smooth appearance */
+.edit-firm-success.show {
+  transition: top 0.7s ease-in-out;
+}
+
+.edit-firm-success.hide {
+  top: -50px; /* Hide above the viewport */
+}

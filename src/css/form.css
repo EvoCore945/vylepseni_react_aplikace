@@ -1,0 +1,293 @@
+form {
+  border-radius: 0.25rem;
+  background-color: var(--color-primary-light);
+  padding: 1.25rem;
+  max-width: 75dvw;
+}
+
+textarea,
+input:not([type="button"]),
+input:not([type="checkbox"]),
+input:not([type="radio"]),
+input:not([type="reset"]),
+select,
+input[type="date"],
+input[type="number"],
+input:not([type="submit"]) {
+  font-size: 1rem;
+  padding: 0.75rem 1.25rem;
+  margin: 0.5rem 0;
+  width: 50%;
+  min-width: 90px;
+  border-radius: 0.25rem;
+  border-width: 1px;
+  border-style: solid;
+  transition: width var(--transition-duration) var(--transition-func);
+}
+
+textarea {
+  height: 150px;
+
+}
+
+.firmform textarea {
+  font-size: 1rem;
+  padding: 0.75rem 1.25rem;
+  margin: 0.5rem 0;
+  width: auto !important;
+  height: 90px;
+  border-radius: 0.25rem;
+  border-width: 1px;
+  border-style: solid;
+  transition: width var(--transition-duration) var(--transition-func);
+}
+
+input[type="radio"],
+input[type="checkbox"] {
+  width:auto;
+}
+
+.search-contact input {
+  width: auto;
+  padding: 0;
+    margin: 0;
+    border-radius: 0;
+    border-width: 0;
+}
+
+textarea:focus,
+input:not([type="button"]):focus,
+input:not([type="checkbox"]):focus,
+input:not([type="radio"]):focus,
+input:not([type="reset"]):focus,
+input:not([type="submit"]):focus {
+  background-color: var(--color-secondary-light);
+  border-color: var(--color-secondary-dark);
+}
+
+textarea:invalid,
+input:not([type="button"]):invalid,
+input:not([type="checkbox"]):invalid,
+input:not([type="radio"]):invalid,
+input:not([type="reset"]):invalid,
+input:not([type="submit"]):invalid {
+  border-color: var(--color-error-dark);
+  background-color: var(--color-error-light);
+  color: var(--color-error);
+}
+
+label {
+  width:150px;
+  vertical-align: top;
+  display: inline-block;
+  padding: 0.75rem 0.75rem 0.75rem 0;
+  font-weight: var(--font-weight-bold);
+}
+
+.firmform .item label {
+  font-size: 16px;
+  text-align: right;
+
+  }
+
+label:has(+ textarea:invalid)
+label:has(+ input:invalid) {
+  color: var(--color-error);
+}
+
+.label::after {
+  content: ":";
+}
+
+.label-required::after {
+  content: "*";
+  vertical-align: super;
+  font-size: smaller;
+}
+
+.form-row {
+  margin: 0.5rem 0;
+  display: grid;
+  grid-template-columns: 0.25fr 1fr;
+  grid-template-rows: repeat(2, auto);
+}
+
+.error-message {
+  color: var(--color-error);
+  grid-column-start: 2;
+  padding-left: 1rem;
+}
+
+.error-message:empty {
+  display: none;
+}
+
+.submit-row {
+  margin: 1.5rem 0;
+  display: flex;
+  justify-content: end;
+  align-items: center;
+  gap: 2rem;
+}
+
+.del-btn {background-color: #232323;}
+.blue-btn {background-color: #4C7FE8;}
+.yellow-btn {background-color: #E8D84C;}
+.green-btn {background-color: #4CE87A;}
+.purple-btn {background-color: #A14CE8;}
+.orange-btn {background-color: #E87C4C;}
+
+.fn-btn {background-color:#2196f3a3;}
+
+.fn-btn a {
+  color:aliceblue;
+  text-decoration: none;
+}
+
+.fn-btn a:hover {
+  background-color: white;
+  color:black;
+}
+
+.hidden {display:none}
+
+.search-contact {
+  display:inline-block;
+}
+
+.search-contact form {
+  width:450px;
+    padding: 0;
+    margin: 0;
+    border-radius: 0;
+    border-width: 0;
+    background: none;
+}
+
+.floating-layer form {
+  margin: 0 auto;
+  width: 50%;
+  max-width: 50%;
+  margin-top: 50px;
+  position: relative;
+  padding: 20px;
+}
+
+.firmform .item {
+display: inline-block;
+width:50%;
+
+}
+
+
+.firmform .item input {
+    width:auto !important;
+
+
+  }
+
+.file-upload {width:50%;
+  display:inline-block;
+}
+
+.file-upload img {
+  float:left;
+  margin-right:10px
+}
+ .campaign-select {width:180px}
+ 
+@media screen and (width <= 1200px) {
+  .floating-layer .firmform {
+      width:100%;
+      max-width:900px;
+    }
+}
+
+/* mobil */
+  @media (width <=  768px) {
+    .floating-layer {
+      width:100%;
+    }
+
+    .file-upload {
+      width:100%;
+    }
+    .file-upload img {float:none}
+
+
+    .floating-layer form {
+      max-width: 100%;
+      width:100%;
+      margin-top:5px;
+      height:auto;
+      min-height: 100%;
+      padding-top: 32px;
+    }
+
+     label {
+      padding-bottom: 0;
+    }
+
+    textarea,
+    input:not([type="button"]),
+    input:not([type="checkbox"]),
+    input:not([type="radio"]),
+    input:not([type="reset"]),
+    select,
+    input[type="date"],
+    input[type="number"],
+    input:not([type="submit"]) {
+      width: 100%;
+    }
+
+    .firmform .item label {
+      min-width:150px;
+      padding-bottom: 0;
+      width: 100%;
+      display: block;
+      text-align: left;
+
+    }
+    
+    .firmform button[type="button"],
+    .firmform button[type="submit"]
+    {
+      width: 100%;
+      margin: 5px auto;
+    }
+
+    .firmform button[class="close-button"] {
+      width: auto !important;
+    }
+
+    .firmform .item input:not([type="checkbox"]),
+    .firmform .item input:not([type="radio"]),
+    .firmform .item input:not([type="reset"]),
+    .firmform .item select,
+    .firmform .item input[type="text"],
+    .firmform .item input[type="date"],
+    .firmform .item input[type="date-time"],
+    .firmform .item textarea {
+      width: 100% !important;
+
+    }
+
+   
+
+  .foto-thumb {
+    width:150px;
+    height:auto;
+    clear:right;
+    float:none
+  }
+
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+
+    
+    .firmform .item {
+      width:100%;
+    }
+   
+  }

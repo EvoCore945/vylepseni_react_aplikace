@@ -1,0 +1,73 @@
+:root{
+  --cb-size: 26px;
+  --cb-radius: 6px;
+  --cb-bg: #fff;
+  --cb-border: #c9d2e1;
+  --cb-border-hover: #8aa4cf;
+  --cb-checked-bg: #3b82f6; /* tailwind-ish blue */
+  --cb-tick: #fff;
+  --focus-ring: 0 0 0 4px rgba(59,130,246,.15);
+  --transition: 160ms ease;
+}
+
+.fancy-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: .6rem;
+  cursor: pointer;
+  user-select: none;
+  width: auto;
+}
+
+.fancy-checkbox input {
+  /* skryj nativní vzhled, ale ponech dostupné pro čtečky a klávesnici */
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.fancy-checkbox .box {
+  width: var(--cb-size);
+  height: var(--cb-size);
+  border-radius: var(--cb-radius);
+  border: 2px solid var(--cb-border);
+  background: var(--cb-bg);
+  display: inline-grid;
+  place-items: center;
+  transition: border-color var(--transition), background var(--transition), transform var(--transition);
+  box-shadow: 0 1px 0 rgba(0,0,0,.04);
+}
+
+.fancy-checkbox:hover .box {
+  border-color: var(--cb-border-hover);
+}
+
+.fancy-checkbox input:focus-visible + .box {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.fancy-checkbox .box::after {
+  content: "";
+  width: 55%;
+  height: 55%;
+  border-right: 3px solid transparent;
+  border-bottom: 3px solid transparent;
+  transform: rotate(35deg) scale(.6);
+  transition: transform var(--transition), border-color var(--transition);
+}
+
+.fancy-checkbox input:checked + .box {
+  background: var(--cb-checked-bg);
+  border-color: var(--cb-checked-bg);
+}
+
+.fancy-checkbox input:checked + .box::after {
+  border-color: var(--cb-tick);
+  transform: rotate(35deg) scale(1);
+}
+
+.fancy-checkbox .label {
+  font: 500 14px/1.1 system-ui, sans-serif;
+}

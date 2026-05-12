@@ -1,0 +1,48 @@
+.campaign-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0.5rem 0;
+}
+
+/* Nadpis nechte mít přirozenou šířku */
+.campaign-toolbar h3 {
+  flex: 0 0 auto;
+  margin: 0; /* reset defaultu */
+}
+
+/* Select vyplní zbylé místo, ale má rozumné limity */
+.campaign-select {
+  flex: 1 1 320px;   /* roztahuje se, výchozí “preferovaná” šířka 320px */
+  min-width: 180px;  /* ať má vždy aspoň něco */
+  max-width: 700px;  /* volitelně omezit, aby nebyl extrémně dlouhý na velkých monitorech */
+  height: 48px;      /* sladit s tlačítky */
+  padding: 0 0.75rem;
+  font-size: 1rem;
+}
+
+/* Tlačítka mají přirozenou šířku, nesmršťují se pod obsah */
+.campaign-toolbar .btn {
+  flex: 0 0 auto;
+  height: 48px;
+  padding: 0 1rem;
+  white-space: nowrap; /* text se neláme na více řádků uvnitř tlačítka */
+  border: none;
+  border-radius: 4px;
+  background: #e74c3c;    /* základní varianta – klidně si uprav */
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Varianty tlačítek (volitelné) */
+.campaign-toolbar .btn-danger {
+  background: #e74c3c;
+}
+
+.campaign-toolbar .btn-purple {
+  background: #8e44ad;
+}
