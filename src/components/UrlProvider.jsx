@@ -9,7 +9,7 @@ const UrlProvider = ({ children }) => {
   const [isDirty, setIsDirty] = useState(false);
   const url = import.meta.env.PROD
     ? 'https://crm.skch.cz/ajax0/v3/'
-    : 'http://localhost/';
+    : 'http://localhost/v3/';
 
   const apiUrl = useMemo(() => `${url}rest.php/`, [url]);
 
