@@ -1,776 +1,377 @@
-/* eslint-disable no-unused-vars */
-/* eslint-disable jsx-a11y/control-has-associated-label */
-/* eslint-disable jsx-a11y/click-events-have-key-events */
-/* eslint-disable jsx-a11y/no-static-element-interactions */
-/* eslint-disable jsx-a11y/label-has-associated-control */
-import axios from 'axios';
-import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import ContactList from './contactList';
-import Filter from './filter';
-import EditFirmForm from './firmform';
-import FutureEvents from './futureEvents';
-import GiftList from './giftList';
-import MeetList from './meetList';
-import Notification from './notification';
-import PracticeList from './practiceList';
-// import SearchContact from './searchContact';
-import { useUrl } from './UrlProvider';
-import WorkshopList from './workshoplist';
-import { setCookie, getCookie, deleteCookie } from '../utils/cookie';
-import useIsSmall from '../utils/mobileDetect';
+import React, { useState, useEffect, useRef } from "react";
+import axios from "axios";
+import Filter from "./filter"; 
+import FirmDetailModal from "./practiceList"; 
+import { Link, useSearchParams } from "react-router-dom";
 
-const getFirstPart = (text) => {
-  const parts = text?.split(/\/\(kont\)/) ?? [];
-  return parts[0];
-};
-
-const FirmList = () => {
-  const isSmall = useIsSmall();
+export default function FirmList() {
   const [data, setData] = useState([]);
-  const [Restdata, setRestData] = useState([]);
-  const [restFilter, setRestFilter] = useState(false);
-  const navigate = useNavigate();
-  const [prevData, setprevData] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [selectedFirm, setSelectedFirm] = useState(null);
-  const [selectedFirmName, setSelectedFirmName] = useState(null);
-  const [selectedContact, setSelectedContact] = useState(null);
-  const [selectedMeet, setSelectedMeet] = useState(null);
-  const [selectedGift, setSelectedGift] = useState(null);
-  const [selectedPractice, setSelectedPractice] = useState(null);
-  const [selectedWS, setSelectedWS] = useState(0);
-  const { url, apiUrl, user } = useUrl();
-  const [filterText, setFilterText] = useState('');
-  const [contactResult, setContactResult] = useState('');
-  const [searchContact, setSearchContact] = useState(false);
-  const [selection, setSelection] = useState(false);
-  const [isWrapped, setIsWrapped] = useState(false);
+  const [prevData, setPrevData] = useState([]);
+  const [filterText, setFilterText] = useState("");
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [lastSelectedId, setLastSelectedId] = useState(null);
+  const [selectedRowId, setSelectedRowId] = useState(null);
+  const [selectedRowName, setSelectedRowName] = useState(null);
+  const [restFilter, setRestFilter] = useState({ show_inactive: false });
+  const [wrap, setWrap] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  // sjednocený název parametru z URL
-  const { idFromURL, firmName } = useParams();
+  const [searchParams] = useSearchParams();
+  const idFromURL = searchParams.get("id");
+  const firmNameFromURL = searchParams.get("firmName");
 
-  // --- Výběr firem a výstup na stránku ---
-  const [selectedIds, setSelectedIds] = useState(new Set());
-  const [selectionText, setSelectionText] = useState('');
-  const [lastSelectedIndex, setLastSelectedIndex] = useState(null);
+  const [sortConfig, setSortConfig] = useState({ key: "firm_name", direction: "asc" });
+  const [openPracticeCount, setOpenPracticeCount] = useState(false);
+  const [selectionText, setSelectionText] = useState("");
 
-  const toggleSelectWithShift = (index, id, shiftKey) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
+  const searchInputRef = useRef(null);
+  const rowRefs = useRef({});
 
-      // cílový stav checkboxu: označit / odznačit dle aktuálního id
-      const willSelect = !next.has(id);
+  // Načtení dat při změně filtru z komponenty Filter
+  useEffect(() => {
+    fetchData(restFilter);
+  }, [restFilter]);
 
-      if (shiftKey && lastSelectedIndex !== null) {
-        // rozsah podle aktuálně viditelného pořadí (pole data)
-        const start = Math.min(lastSelectedIndex, index);
-        const end = Math.max(lastSelectedIndex, index);
-        const idsInRange = data.slice(start, end + 1).map((row) => row.id);
-
-        idsInRange.forEach((rid) => {
-          if (willSelect) {
-            next.add(rid);
-          } else {
-            next.delete(rid);
-          }
-        });
-      } else
-        if (willSelect) {
-          next.add(id);
-        } else {
-          next.delete(id);
-        }
-      return next;
-    });
-
-    // nastav novou kotvu (poslední kliknutý index)
-    setLastSelectedIndex(index);
-  };
-
-  const handleClearSelection = () => {
-    setSelectedIds(new Set());
-    setSelectionText('');
-    setLastSelectedIndex(null);
-  };
-
-  const handlePasteToPage = () => {
-    // získáme názvy firem podle ID z kompletních dat (prevData)
-    const namesById = new Map(prevData.map((item) => [item.id, item.name]));
-    const names = Array.from(selectedIds)
-      .map((sid) => getFirstPart(namesById.get(sid) ?? ''))
-      .filter(Boolean);
-    const text = names.join('; ');
-    setSelectionText(text);
-    console.log(text);
-    // Volitelné: zkopírovat i do schránky
-    // try { navigator.clipboard.writeText(text); } catch (e) {}
-  };
-
-  const makeHandleFilter = (value, event) => {
-    console.log(value, event.code);
-    /*
-    if (selection) {
-      setData(prevData);
-      setSelection(false);
+  // Načtení stavu zalamování z localStorage
+  useEffect(() => {
+    const savedWrap = localStorage.getItem("wrapState");
+    if (savedWrap !== null) {
+      setWrap(JSON.parse(savedWrap));
     }
-    */
-    if (value === undefined || value.length < 2) {
-      return;
-    }
-    const normalizedValue = value
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .trim();
-    const newFilteredData = prevData.filter((item) => {
-      const itemName = item.name
-        ? item.name
-          .toString()
-          .normalize('NFD')
-          .replace(/[\u0300-\u036f]/g, '')
-          .toLowerCase()
-        : '';
-      return itemName.includes(normalizedValue);
-    });
-    setData(newFilteredData);
-  };
+  }, []);
 
-  const makeHandleFilterByID = (firmId, event) => {
-    console.log(event.code);
-    if (
-      firmId.length === 0
-      || event.code === 'Backspace'
-      || event.code === 'Delete'
-      || event.code === 'Enter'
-      || event.code === 'NumpadEnter'
-    ) {
-      setData(prevData);
-    } else {
-      setData((prevFirm) => prevFirm.filter((firm) => firm.id === firmId.firm_id));
-    }
-  };
-
-  const handleFilter = (event) => {
-    const { value } = event.target;
-    setFilterText(value);
-    makeHandleFilter(value, event);
-  };
-
-  const handlePaste = () => {
-    setData(prevData);
-  };
-
-  const handleSelect = () => {
-    setSelection(true);
-    console.log(selection);
-  };
-
-  const csvURL = `${apiUrl}firms/list/?csvexport`;
-
-  const fetchData = async () => {
-    setLoading(true);
-    console.log(Restdata);
-    console.log(restFilter);
+  const fetchData = async (filters = {}) => {
     try {
-      const queryString = restFilter ? `/filter/?${restFilter}` : '';
-      const response = await axios.get(`${apiUrl}firms/list${queryString}`);
-      setData(response.data);
-      setprevData(response.data);
-      if (filterText.length > 0) {
-        // zachovat vyfiltrovanou firmu
-        makeHandleFilter(filterText, { code: ' ' });
+      // Předáme restFilter jako query parametry (např. ?show_inactive=true)
+      const response = await axios.get("/api/v1/firms", {
+        params: filters && typeof filters === "object" ? filters : {},
+        withCredentials: true,
+      });
+
+      console.log("Odpověď z API:", response.data);
+
+      let rawData = [];
+      if (Array.isArray(response.data)) {
+        rawData = response.data;
+      } else if (Array.isArray(response.data?.data)) {
+        rawData = response.data.data;
+      } else if (Array.isArray(response.data?.firms)) {
+        rawData = response.data.firms;
+      } else if (typeof response.data === "object" && response.data !== null) {
+        const foundArray = Object.values(response.data).find((val) => Array.isArray(val));
+        if (foundArray) rawData = foundArray;
       }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+
+      const mappedData = rawData.map((item) => ({
+        id: item.id || item.firm_id,
+        firm_name: item.firm_name || item.name || item.nazev || "",
+        street: item.street || item.ulice || "",
+        city: item.city || item.mesto || "",
+        zip: item.zip || item.psc || "",
+        states_id: item.states_id || "",
+        practice_count: item.practice_count ?? item.practices_count ?? 0,
+        note: item.note || item.poznamka || "",
+        state: item.state ?? item.active ?? "",
+      }));
+
+      setData(mappedData);
+      setPrevData(mappedData);
+    } catch (error) {
+      console.error("Chyba při načítání dat:", error);
     }
   };
+
+  const removeAccents = (str) =>
+    str ? String(str).normalize("NFD").replace(/[\u0300-\u036f]/g, "") : "";
+
+  // Filtrování na straně klienta
+  const filteredData = data.filter((row) => {
+    // 1. Textové vyhledávání v tabulce
+    const textMatches = filterText
+      ? Object.values(row).some((val) =>
+          removeAccents(val).toLowerCase().includes(removeAccents(filterText).toLowerCase())
+        )
+      : true;
+
+    // 2. Filtrování neaktivních firem podle volby ve Filter.jsx
+    const showInactive = restFilter && typeof restFilter === "object" ? restFilter.show_inactive : false;
+    const stateMatches = showInactive
+      ? true
+      : String(row.state) !== "0" && row.state !== false;
+
+    return textMatches && stateMatches;
+  });
+
+  useEffect(() => {
+    if (data.length > 0) {
+      if (idFromURL) {
+        const foundRow = data.find((row) => String(row.id) === String(idFromURL));
+        if (foundRow) {
+          setSelectedRowId(foundRow.id);
+          setSelectedRowName(foundRow.firm_name);
+          setOpenPracticeCount(true);
+        }
+      } else if (firmNameFromURL) {
+        const foundRow = data.find(
+          (row) => removeAccents(row.firm_name).toLowerCase() === removeAccents(firmNameFromURL).toLowerCase()
+        );
+        if (foundRow) {
+          setSelectedRowId(foundRow.id);
+          setSelectedRowName(foundRow.firm_name);
+          setOpenPracticeCount(true);
+        }
+      }
+    }
+  }, [idFromURL, firmNameFromURL, data]);
 
   const toggleWrap = () => {
-    const newValue = !isWrapped;
-    setIsWrapped(newValue);
-    setCookie('isWrapped', newValue ? '1' : '0', 1);
-  };
-  useEffect(() => {
-    const saved = getCookie('isWrapped');
-
-    if (saved !== null) {
-      setIsWrapped(saved === '1');
-    }
-  }, []);
-
-  // skok na pozic pomocí alt+key
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.altKey && /^[a-zA-Z]$/.test(e.key)) {
-        const targetRow = document.getElementById(`row-${e.key.toLowerCase()}`);
-        if (targetRow) {
-          targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-  }, [restFilter, Restdata]);
-
-  // opravený parametr z URL + bezpečný převod na číslo
-  useEffect(() => {
-    console.log('idFromURL =', idFromURL);
-    if (idFromURL && prevData.length > 0) {
-      const firmIdNum = Number(idFromURL);
-      if (!Number.isNaN(firmIdNum)) {
-        setSelectedFirm(firmIdNum);
-      }
-      /* else {
-        console.warn('Parametr idFromURL není číslo:', idFromURL);
-      }
-        */
-    }
-  }, [idFromURL, prevData]);
-
-  useEffect(() => {
-    setData(prevData);
-    makeHandleFilter(filterText, { code: ' ' });
-  }, [filterText, loading]);
-
-  const parseFirmNameFromUrl = (segment) => {
-    if (!segment) {
-      return '';
-    }
-    const decoded = decodeURIComponent(segment);
-    // Umožní URL styl /firm/absolut-systems nebo /firm/ABBAS
-    return decoded.replace(/-/g, ' ');
+    const newWrap = !wrap;
+    setWrap(newWrap);
+    localStorage.setItem("wrapState", JSON.stringify(newWrap));
   };
 
-  useEffect(() => {
-    if (!firmName || prevData.length === 0) {
-      return;
-    }
-
-    const q = parseFirmNameFromUrl(firmName);
-    setFilterText(q);
-    makeHandleFilter(q, { code: ' ' });
-  }, [firmName, prevData]);
-
-  const handleEditClick = (firmId, name) => {
-    setSelectedFirmName(name);
-    console.log(name);
-    setSelectedFirm(Number(firmId));
+  const handlePracticeListClick = (id, name) => {
+    setSelectedRowId(id);
+    setSelectedRowName(name);
+    setOpenPracticeCount(true);
   };
 
-  const handleEditContactClick = (id, name) => {
-    console.log(id);
-    setSelectedFirmName(name);
-    setSelectedContact(id);
+  const handleModalClose = () => {
+    setOpenPracticeCount(false);
+    setSelectedRowId(null);
+    setSelectedRowName(null);
   };
 
-  const handleworkshoplistClick = (firmId, name) => {
-    setSelectedFirmName(name);
-    setSelectedWS(firmId);
-  };
+  const toggleSelectWithShift = (id, isShiftPressed) => {
+    let newSelected = new Set(selectedIds);
 
-  const handleRestFilter = (RestData) => {
-    console.log(RestData.show_inactive);
-    const params = new URLSearchParams(RestData);
-    setRestFilter(params);
-    setRestData({ show_inactive: RestData.show_inactive });
-  };
+    if (isShiftPressed && lastSelectedId !== null) {
+      const currentIndex = filteredData.findIndex((row) => row.id === id);
+      const lastIndex = filteredData.findIndex((row) => row.id === lastSelectedId);
 
-  const handleSaveContact = () => {
-    // setSelectedContact(null);
-    fetchData();
-  };
+      const [start, end] = [Math.min(currentIndex, lastIndex), Math.max(currentIndex, lastIndex)];
+      const rangeIds = filteredData.slice(start, end + 1).map((row) => row.id);
 
-  const handleWS = () => {
-    setSelectedWS(null);
-  };
-
-  const handleMeet = () => {
-    setSelectedMeet(null);
-  };
-
-  const handlePractice = () => {
-    setSelectedPractice(null);
-  };
-
-  const handleGift = () => {
-    setSelectedGift(null);
-  };
-
-  const handleGiftlistClick = (id, name) => {
-    setSelectedFirmName(name);
-    setSelectedGift(id);
-  };
-
-  const handlePracticeListClick = (id) => {
-    // ysetSelectedFirmName(name);
-    // setSelectedPractice(id);
-    navigate(`/practiceListTable/${id}`);
-  };
-
-  const handleEditEventClick = (id) => {
-    navigate(`/events/${id}`);
-  };
-
-  const handleEditMeetClick = (id, name) => {
-    setSelectedFirmName(name);
-    setSelectedMeet(id);
-  };
-
-  const deleteFirm = async (firmId) => {
-    try {
-      const response = await axios.delete(`${apiUrl}firms/${firmId}`);
-      if (response.status === 200) {
-        // fetchData();
-        setData((prevFirm) => prevFirm.filter((firm) => firm.id !== firmId));
+      rangeIds.forEach((rangeId) => newSelected.add(rangeId));
+    } else {
+      if (newSelected.has(id)) {
+        newSelected.delete(id);
       } else {
-        setError('Smazání kontaktu selhalo');
+        newSelected.add(id);
       }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      setLastSelectedId(id);
+    }
+
+    setSelectedIds(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedIds.size === filteredData.length && filteredData.length > 0) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredData.map((row) => row.id)));
     }
   };
 
-  const handledelClick = (firmId) => {
-    const confirmed = window.confirm('Chceš to fakt vymazat?');
-    if (confirmed) {
-      deleteFirm(firmId);
+  const handlePasteToPage = async () => {
+    const selectedFirms = filteredData.filter((row) => selectedIds.has(row.id));
+    const text = selectedFirms.map((firm) => firm.firm_name).join("; ");
+    setSelectionText(text);
+
+    if (navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 3000);
+      } catch (err) {
+        console.error("Kopírování do schránky selhalo:", err);
+      }
     }
   };
 
-  const handleClose = () => {
-    setSelectedFirm(null);
-  };
-
-  const handleContactResult = (result) => {
-    setContactResult(result);
-  };
-
-  const handleCloseContact = () => {
-    setSelectedContact(null);
-  };
-
-  const handleCloseMeet = () => {
-    setSelectedMeet(null);
-  };
-
-  const handleCloseWS = () => {
-    setSelectedWS(null);
-  };
-
-  const handleCloseGift = () => {
-    setSelectedGift(null);
-  };
-
-  const handleClosePractice = () => {
-    setSelectedPractice(null);
-  };
-
-  const handleSave = () => {
-    setSelectedFirm(null);
-    fetchData();
-  };
-
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
   const sortByKey = (key) => {
-    let direction = 'asc';
-    if (sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
+    let direction = "asc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
     }
+
     const sortedData = [...data].sort((a, b) => {
-      if (a[key] < b[key]) {
-        return direction === 'asc' ? -1 : 1;
+      const valA = a[key] ?? "";
+      const valB = b[key] ?? "";
+
+      if (typeof valA === "number" && typeof valB === "number") {
+        return direction === "asc" ? valA - valB : valB - valA;
       }
-      if (a[key] > b[key]) {
-        return direction === 'asc' ? 1 : -1;
-      }
-      return 0;
+
+      return direction === "asc"
+        ? String(valA).localeCompare(String(valB), "cs", { sensitivity: "base" })
+        : String(valB).localeCompare(String(valA), "cs", { sensitivity: "base" });
     });
+
     setData(sortedData);
     setSortConfig({ key, direction });
   };
 
-  const getSortIcon = (key) => {
-    if (sortConfig.key !== key) {
-      return '';
-    }
-    return sortConfig.direction === 'asc' ? '▲' : '▼';
-  };
-
-  const addFirmBnt = () => (
-    <button
-      type="button"
-      className="add-firm-bnt"
-      onClick={() => handleEditClick(-1)}
-    >
-      +
-    </button>
-  );
-
-  const handleClearInput = () => {
-    setFilterText('');
-    setData(prevData);
-  };
-
-  const handleSaveAfterAddFirm = (FirmName) => {
-    console.log(FirmName);
-    setFilterText(FirmName);
-    fetchData();
-    setData(prevData);
-    setSelectedFirm(null);
-    makeHandleFilter(FirmName, { code: ' ' });
-  };
-
-  // return section
-  if (loading) {
-    return <p className="no-data">Načítání...</p>;
-  }
-  if (error) {
-    return (
-      <p className="no-data">
-        Chyba:
-        {error}
-        <a href={`${url}`}>Přihlásit</a>
-      </p>
+  const scrollToFirstLetter = (letter) => {
+    const target = filteredData.find((row) =>
+      removeAccents(row.firm_name.trim()).toLowerCase().startsWith(letter.toLowerCase())
     );
-  }
+    if (target && rowRefs.current[target.id]) {
+      rowRefs.current[target.id].scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  };
 
-  let columns = [];
-  let mappedData = [];
-  if (data.length !== 0) {
-    columns = Object.keys(data[0]);
-    mappedData = Object.values(data).map((item) => {
-      const mappedItem = {};
-      columns.forEach((key) => {
-        mappedItem[key] = item[key];
-      });
-      return mappedItem;
-    });
-  }
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const isInput = ["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName);
+      if (!isInput && e.altKey && e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
+        e.preventDefault();
+        scrollToFirstLetter(e.key);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [filteredData]);
 
   return (
     <>
-      <FutureEvents />
-      {restFilter ? (
-        <div>
-          <Filter setRestFilter={handleRestFilter} initFormData={Restdata} />
-        </div>
-      ) : (
-        <div
-          className="filter-bar"
-          style={{
-            // rozloženo kvůli object-curly-newline
-          }}
-        >
+      <div className="flex align-items border-bottom pb-2 gap-3">
+        {/* Vyhledávací pole */}
+        <div className="flex-grow-1">
           <input
+            ref={searchInputRef}
             type="text"
-            name="name"
-            className="search"
-            placeholder="filtrovat dle názvu či kontaktu"
-            tabIndex={0}
+            className="form-control"
+            placeholder="Hledat firmu..."
             value={filterText}
-            onChange={(e) => handleFilter(e)}
-            onPaste={handlePaste}
-            onSelect={handleSelect}
-            onKeyDown={handleFilter}
+            onChange={(e) => setFilterText(e.target.value)}
           />
-          <button
-            type="button"
-            onClick={() => setRestFilter(true)}
-            className="filter-ex"
+        </div>
+
+        {/* Pokročilý filtr (komponenta Filter) */}
+        {restFilter !== false && (
+          <Filter
+            setRestFilter={setRestFilter}
+            initFormData={restFilter}
           />
+        )}
+
+        <div className="btn-group gap-2 ms-auto">
+          <Link to="/firma/novy" className="btn btn-outline-success border shadow">
+            Nová firma
+          </Link>
           <button
-            type="button"
-            className="clear-input-filter-btn fn-btn"
-            onClick={handleClearInput}
-            style={{
-              cursor: 'pointer',
-            }}
+            onClick={toggleWrap}
+            className={`btn border shadow ${wrap ? "btn-secondary" : "btn-outline-secondary"}`}
           >
-            X
+            {wrap ? "Ořezat text" : "Zalomit text"}
           </button>
         </div>
-      )}
+      </div>
 
-      {selectedGift ? (
-        <GiftList
-          firmId={selectedGift}
-          onSave={handleGift}
-          firmName={selectedFirmName}
-          onClose={handleCloseGift}
-        />
-      ) : ('')}
-
-      {selectedMeet ? (
-        <MeetList
-          firmId={selectedMeet}
-          onSave={handleMeet}
-          firmName={selectedFirmName}
-          onClose={handleCloseMeet}
-        />
-      ) : ('')}
-
-      {selectedPractice ? (
-        <PracticeList
-          firmId={selectedPractice}
-          onSave={handlePractice}
-          firmName={selectedFirmName}
-          onClose={handleClosePractice}
-        />
-      ) : ('')}
-
-      {selectedWS ? (
-        <WorkshopList
-          firmId={selectedWS}
-          onSave={handleWS}
-          firmName={selectedFirmName}
-          onClose={handleCloseWS}
-        />
-      ) : ('')}
-
-      {selectedContact ? (
-        <ContactList
-          firmId={selectedContact}
-          onSave={handleSaveContact}
-          firmName={getFirstPart(selectedFirmName)}
-          onClose={handleCloseContact}
-        />
-      ) : ('')}
-
-      {selectedFirm ? (
-        <EditFirmForm
-          firmId={selectedFirm}
-          onSave={handleSave}
-          handleSaveAfterAddFirm={handleSaveAfterAddFirm}
-          onClose={handleClose}
-          firmName={selectedFirmName}
-        />
-      ) : (
-        <>
-          {/* ---- Panel pro práci s výběrem ---- */}
-          <div
-            className="selection-panel"
-            style={{
-              display: 'flex',
-              gap: '8px',
-              alignItems: 'center',
-              margin: '8px 0',
-            }}
-          >
-            <button
-              type="button"
-              className="fn-btn"
-              onClick={handlePasteToPage}
-              disabled={selectedIds.size === 0}
-              title="Vloží jména vybraných firem na stránku"
-            >
-              Vložit výběr na stránku
-            </button>
-            <button
-              type="button"
-              className="fn-btn"
-              onClick={handleClearSelection}
-              disabled={selectedIds.size === 0 && selectionText.length === 0}
-              title="Zruší výběr a vymaže výstup"
-            >
-              Vymazat výběr
-            </button>
-            <span style={{ opacity: 0.7 }}>
-              {selectedIds.size > 0 ? `Vybráno: ${selectedIds.size}` : 'Nevybráno nic'}
-            </span>
-          </div>
-
-          {/* ---- Výstup vybraných jmen na stránku ---- */}
-          {selectionText && (
-            <div
-              className="selection-output"
-              style={{ margin: '8px 0' }}
-            >
-              <label
-                id="selected-firms-label"
-                htmlFor="selected-firms"
-                style={{ display: 'block', marginBottom: 4 }}
+      <div className="table-responsive">
+        <table className={`table ${wrap ? "" : "table-wrap"}`}>
+          <thead>
+            <tr>
+              <th style={{ textAlign: "left" }}>
+                <input
+                  type="checkbox"
+                  onChange={handleSelectAll}
+                  checked={selectedIds.size === filteredData.length && filteredData.length > 0}
+                />
+              </th>
+              <th>#</th>
+              <th className="pointer" onClick={() => sortByKey("firm_name")}>
+                Název firmy {sortConfig.key === "firm_name" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+              </th>
+              <th className="pointer" onClick={() => sortByKey("street")}>
+                Ulice {sortConfig.key === "street" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+              </th>
+              <th className="pointer" onClick={() => sortByKey("city")}>
+                Město {sortConfig.key === "city" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+              </th>
+              <th className="pointer" onClick={() => sortByKey("zip")}>
+                PSČ {sortConfig.key === "zip" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+              </th>
+              <th className="pointer" onClick={() => sortByKey("state")}>
+                Stát {sortConfig.key === "state" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+              </th>
+              <th className="pointer text-center" onClick={() => sortByKey("practice_count")}>
+                Praxe {sortConfig.key === "practice_count" ? (sortConfig.direction === "asc" ? "▲" : "▼") : ""}
+              </th>
+              <th>Poznámka</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredData.map((row, index) => (
+              <tr
+                key={row.id}
+                ref={(el) => (rowRefs.current[row.id] = el)}
+                className={selectedIds.has(row.id) ? "table-active" : ""}
               >
-                Vybrané firmy (oddělené středníkem):
-              </label>
-              <textarea
-                id="selected-firms"
-                aria-labelledby="selected-firms-label"
-                readOnly
-                rows={3}
-                style={{ width: '100%', resize: 'vertical' }}
-                value={selectionText}
-              />
-            </div>
-          )}
-
-          <table className={`firmlist responsive-table ${isWrapped ? 'wrap-cells' : 'nowrap-cells'}`}>
-            {mappedData.length !== 0 ? '' : (
-              <caption>
-                {mappedData.length}
-                {' '}
-                záznamů
-              </caption>
-            )}
-            <thead>
-              <tr>
-                {/* nový sloupec pro checkboxy */}
-                <th>
-                  <span
-                    onClick={toggleWrap}
-                    style={{
-                      cursor: 'pointer',
-                      fontSize: '1.2em',
-                      paddingLeft: '1em',
-                    }}
-                    title="Přepnout zalamování textu"
+                <td>
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(row.id)}
+                    onChange={(e) => toggleSelectWithShift(row.id, e.nativeEvent.shiftKey)}
+                  />
+                </td>
+                <td>{index + 1}</td>
+                <td>
+                  <Link to={`/firma/detail/${row.id}`} title="Zobrazit detail firmy">
+                    {row.firm_name}
+                  </Link>
+                </td>
+                <td>{row.street}</td>
+                <td>{row.city}</td>
+                <td>{row.zip}</td>
+                <td>{row.state}</td>
+                <td className="text-center">
+                  <button
+                    className="btn btn-sm btn-outline-info"
+                    onClick={() => handlePracticeListClick(row.id, row.firm_name)}
                   >
-                    🔁
-                  </span>
-                  &nbsp;Vybrat
-                </th>
-
-                {columns.map((column) => (
-                  <th
-                    key={column}
-                    onClick={() => sortByKey(column)}
-                    className={`col-${column} ${getSortIcon(column) ? 'sorted-colm' : ''}`}
-                  >
-                    {column === 'name' ? (
-                      <>
-                        Firma (
-                        {' '}
-                        {mappedData.length}
-                        {' '}
-                        )
-                        {getSortIcon(column)}
-                      </>
-                    ) : (
-                      `${column} ${getSortIcon(column)}`
-                    )}
-                  </th>
-                ))}
-                <th style={{ 'text-align': 'left' }}>
-                  {addFirmBnt()}
-                  <a href={csvURL} id="csv_export">CSV export</a>
-                </th>
+                    {row.practice_count}
+                  </button>
+                </td>
+                <td>{row.note}</td>
               </tr>
-            </thead>
-            <tbody>
-              {mappedData.map((row, rowIndex) => (
-                <tr key={row.id} id={`row-${row.name.charAt(0).toLowerCase()}`}>
-                  {/* checkbox sloupec */}
-                  <td key={`sel-${row.id}`}>
-                    <input
-                      type="checkbox"
-                      checked={selectedIds.has(row.id)}
-                      onClick={(e) => {
-                        // e.stopPropagation(); // ať klik na checkbox neotevírá edit
-                        console.log(row.id);
-                        toggleSelectWithShift(rowIndex, Number(row.id), e.shiftKey);
-                        console.log(row.id);
-                      }}
-                      onChange={() => {
-                        // podpora z klávesnice (mezerník) – bez shift rozsahu
-                        toggleSelectWithShift(rowIndex, row.id, false);
-                      }}
-                    />
-                  </td>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
-                  {columns.map((column) => (
-                    column === 'name' ? (
-                      <td
-                        key={column}
-                        onClick={() => handleEditClick(row.id, row.name)}
-                      >
-                        {(() => {
-                          const parts = row[column]?.split(/\/\(kont\)/) ?? [];
-                          return (
-                            <>
-                              <span className={isWrapped ? 'wrap' : ''}>{parts[0]}</span>
-                              {parts[1] && <span className="col-contacts">{parts[1]}</span>}
-                            </>
-                          );
-                        })()}
-                      </td>
-                    ) : (
-                      <td
-                        key={column}
-                        className={`col-${column} ${getSortIcon(column) ? 'sorted-colm' : ''}`}
-                      >
-                        {row[column]}
-                      </td>
-                    )
-                  ))}
+      <div className="mt-3">
+        <button
+          className="btn btn-primary me-2"
+          onClick={handlePasteToPage}
+          disabled={selectedIds.size === 0}
+        >
+          Vložit označené na stránku & kopírovat ({selectedIds.size})
+        </button>
+        {copied && <span className="text-success ms-2">Zkopírováno do schránky!</span>}
 
-                  <td>
-                    <div className={isSmall ? 'small-resolution' : ''}>
-                      <button type="button" onClick={() => handleEditContactClick(row.id, row.name)}>Kontakty</button>
-                      <button type="button" onClick={() => handleEditMeetClick(row.id, row.name)} className="blue-btn">Schůzky</button>
-                      <button type="button" onClick={() => handleworkshoplistClick(row.id, row.name)}>Akce</button>
-                      <button type="button" onClick={() => handleEditEventClick(row.id, row.name)} className="green-btn">Událost</button>
-                      <button type="button" onClick={() => handleGiftlistClick(row.id, row.name)} className="orange-btn">Dary</button>
-                      <button type="button" onClick={() => handlePracticeListClick(row.id, row.name)} className="purple-btn">Praxe</button>
-                      {user.user !== 'reader' ? (
-                        <button type="button" onClick={() => handledelClick(row.id, row.name)} className="del-btn">Smazat</button>
-                      ) : (
-                        ''
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div
-            className="selection-panel"
-            style={{
-              display: 'flex',
-              gap: '8px',
-              alignItems: 'center',
-              padding: '10px',
-              position: 'fixed',
-              bottom: 0,
-              background: 'white',
-            }}
-          >
-            <button
-              type="button"
-              className="blue-btn"
-              onClick={handlePasteToPage}
-              disabled={selectedIds.size === 0}
-              title="Zkopírovat do schránky"
-            >
-              Vložit výběr na stránku & kopírovat
-            </button>
-            <button
-              type="button"
-              className="red-btn"
-              onClick={handleClearSelection}
-              disabled={selectedIds.size === 0 && selectionText.length === 0}
-              title="Zruší výběr a vymaže výstup"
-            >
-              Vymazat výběr
-            </button>
-            <span>
-              {selectedIds.size > 0 ? `Vybráno: ${selectedIds.size}` : 'Nevybráno nic'}
-            </span>
-            {copied && (<Notification message="Zkopírováno do schránky ✓" type="edit-firm-success" />)}
+        {selectionText && (
+          <div className="mt-2">
+            <textarea
+              className="form-control"
+              rows={3}
+              value={selectionText}
+              readOnly
+            />
           </div>
+        )}
+      </div>
 
-        </>
+      {openPracticeCount && (
+        <FirmDetailModal
+          isOpen={openPracticeCount}
+          onClose={handleModalClose}
+          id={selectedRowId}
+          name={selectedRowName}
+        />
       )}
     </>
   );
-};
-export default FirmList;
+}
