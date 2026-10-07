@@ -2,29 +2,51 @@
 import axios from 'axios';
 import PropTypes from 'prop-types';
 import React, { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import EditContactForm from './editContactForm';
 import Notification from './notification';
 import { useUrl } from './UrlProvider';
 
 const ContactList = ({
-  firmId, firmName, onClose, onSave,
+  firmId: propFirmId, firmName: propFirmName, onClose, onSave,
 }) => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const firmId = propFirmId || id;
+
   const { apiUrl } = useUrl();
   const [contacts, setContacts] = useState([]);
+  const [firmName, setFirmName] = useState(propFirmName || '');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [msg, setMsg] = useState(null);
   const [selectedContact, setSelectedContact] = useState(null);
 
   useEffect(() => {
+    const fetchFirmInfo = async () => {
+      if (!propFirmName && firmId) {
+        try {
+          const res = await axios.get(`${apiUrl}firms/${firmId}`);
+          if (res.data && res.data.name) {
+            setFirmName(res.data.name);
+          }
+        } catch (e) {
+          console.error('Failed to fetch firm name:', e);
+        }
+      }
+    };
+    fetchFirmInfo();
+  }, [firmId, propFirmName, apiUrl]);
+
+  useEffect(() => {
     const fetchContacts = async () => {
+      if (!firmId) return;
       try {
         const response = await axios.get(`${apiUrl}contacts/${firmId}`);
         if (Array.isArray(response.data) && response.data.length === 0
         && response.data.msg !== undefined) {
           setError('Žádné kontakty.');
         } else {
-          console.log(response.data);
           setContacts(response.data);
         }
       } catch (err) {
@@ -35,7 +57,7 @@ const ContactList = ({
     };
 
     fetchContacts();
-  }, [firmId, selectedContact]);
+  }, [firmId, selectedContact, apiUrl]);
 
   const deleteContact = async (contactId) => {
     try {
@@ -51,8 +73,21 @@ const ContactList = ({
       setLoading(false);
     }
   };
+
   const handleClose = () => {
-    setSelectedContact(null);
+    if (onClose) {
+      onClose();
+    } else {
+      setSelectedContact(null);
+    }
+  };
+
+  const handleBack = () => {
+    if (onClose) {
+      onClose();
+    } else {
+      navigate(-1);
+    }
   };
 
   const handledelClick = (contact) => {
@@ -61,17 +96,19 @@ const ContactList = ({
       deleteContact(contact.id);
     }
   };
+
   const handleEditClick = (contact) => {
-    console.log(contact);
     setSelectedContact(contact);
   };
+
   const handleKeyDown = (event) => {
     if (event.key === 'Escape') {
       if (!selectedContact) {
-        onClose(null);
+        handleBack();
       }
     }
   };
+
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
     return () => {
@@ -83,20 +120,19 @@ const ContactList = ({
     setContacts(contacts.map(
       (contact) => (contact.id === updatedContact.id ? updatedContact : contact),
     ));
-    setSelectedContact(null); // Close the form after saving
-    onSave();
+    setSelectedContact(null);
+    if (onSave) onSave();
   };
 
   const handleCopy = (inputValue) => {
     navigator.clipboard.writeText(inputValue).then(() => {
       setMsg('Zkopírováno!');
     }).catch((err) => {
-      setError('Chyba při kopírování: ', err);
+      setError(`Chyba při kopírování: ${err}`);
     });
   };
 
   const Clipboard = (formData) => {
-    console.log(formData);
     const formattedString = formData.filter((item) => item).join(', ');
     handleCopy(formattedString);
   };
@@ -104,30 +140,38 @@ const ContactList = ({
   if (loading) {
     return <p className="no-data">Načítám...</p>;
   }
-  if (error) {
+
+  if (error && !contacts.length) {
     return (
-      <p className="no-data">
-        Error:
-        {error}
-      </p>
+      <div className="page-container">
+        <button className="fn-btn" type="button" onClick={handleBack}>← Zpět</button>
+        <p className="no-data">Chyba: {error}</p>
+      </div>
     );
   }
+
+  const displayName = firmName ? firmName.split('/(kont)')[0] : '';
+
   return (
-    <div className={`floating-layer ${!firmId ? 'hidden' : ''}`}>
+    <div className="page-container" style={{ padding: '20px' }}>
       {msg && (<Notification message={msg} type="edit-firm-success" />)}
       {error && (<Notification message={error} type="edit-firm-error" />)}
       {selectedContact ? (
         <EditContactForm
           contact={selectedContact}
           onSave={handleSave}
-          onClose={handleClose}
-          firmName={firmName}
+          onClose={() => setSelectedContact(null)}
+          firmName={displayName}
         />
       ) : (
         <>
-          <button className="close-button" type="button" onClick={onClose}>X</button>
+          <div style={{ marginBottom: '15px' }}>
+            <button className="fn-btn" type="button" onClick={handleBack}>← Zpět na seznam firem</button>
+          </div>
           <table className="responsive-table">
-            <caption><h3>{`${firmName.split('/(kont)')[0]} - kontakty`}</h3></caption>
+            <caption>
+              <h3>{displayName ? `${displayName} - kontakty` : 'Kontakty'}</h3>
+            </caption>
             <thead>
               <tr>
                 <th>Hlavní</th>
@@ -136,9 +180,8 @@ const ContactList = ({
                 <th>Jméno</th>
                 <th>E-mail</th>
                 <th>Telefon</th>
-                <th>LinkedIN</th>
+                <th>LinkedIn</th>
                 <th />
-
               </tr>
             </thead>
             <tbody>
@@ -148,9 +191,9 @@ const ContactList = ({
                   <td data-label="Aktivní">{contact.active_c === '1' ? '\u2705' : '\u2610'}</td>
                   <td data-label="Foto"><img src={contact.img} alt="" className="kontakt-img" /></td>
                   <td data-label="Jméno">{contact.surname}</td>
-                  <td data-label="E-mail"><a href={`${contact.mailto.replace(/\+/g, ' ')}`}>{contact.email}</a></td>
+                  <td data-label="E-mail"><a href={`${contact.mailto?.replace(/\+/g, ' ')}`}>{contact.email}</a></td>
                   <td data-label="Telefon"><a href={`tel:${contact.phone}`}>{contact.phone}</a></td>
-                  <td data-label="LinkedIN">{ contact.linkedin ? (<a href={`${contact.linkedin}`}>LinkedIN</a>) : '\u00A0'}</td>
+                  <td data-label="LinkedIn">{contact.linkedin ? (<a href={`${contact.linkedin}`}>LinkedIn</a>) : '\u00A0'}</td>
                   <td>
                     <button type="button" onClick={() => handleEditClick(contact)}>upravit</button>
                     <button type="button" onClick={() => handledelClick(contact)} className="del-btn">smazat</button>
@@ -165,7 +208,12 @@ const ContactList = ({
                 <td />
                 <td />
                 <td />
-                <td><button type="button" onClick={() => handleEditClick({ id: null, firm_id: firmId, main: !contacts.filter((contact) => contact.main === '1').length })}>Přidat kontakt</button></td>
+                <td />
+                <td>
+                  <button type="button" onClick={() => handleEditClick({ id: null, firm_id: firmId, main: !contacts.filter((contact) => contact.main === '1').length })}>
+                    Přidat kontakt
+                  </button>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -175,11 +223,18 @@ const ContactList = ({
   );
 };
 
-export default ContactList;
-
 ContactList.propTypes = {
-  firmId: PropTypes.string.isRequired,
-  onClose: PropTypes.func.isRequired,
-  firmName: PropTypes.string.isRequired,
-  onSave: PropTypes.func.isRequired,
+  firmId: PropTypes.string,
+  onClose: PropTypes.func,
+  firmName: PropTypes.string,
+  onSave: PropTypes.func,
 };
+
+ContactList.defaultProps = {
+  firmId: null,
+  onClose: null,
+  firmName: '',
+  onSave: () => {},
+};
+
+export default ContactList;

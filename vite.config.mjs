@@ -16,5 +16,12 @@ export default defineConfig({
   server: {
     port: 9000,
     open: true,
+    proxy: {
+      '/api/v1': {
+        target: 'http://localhost',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/v1/, '/v3/rest.php'),
+      },
+    },
   },
 });
