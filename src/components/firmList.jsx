@@ -2,16 +2,13 @@ import axios from 'axios';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import ContactList from './contactList';
 import Filter from './filter';
 import EditFirmForm from './firmform';
 import FutureEvents from './futureEvents';
 import GiftList from './giftList';
-import MeetList from './meetList';
 import Notification from './notification';
 import PracticeList from './practiceList';
 import { useUrl } from './UrlProvider';
-import WorkshopList from './workshoplist';
 
 import { getCookie, setCookie } from '../utils/cookie';
 import useIsSmall from '../utils/mobileDetect';
@@ -36,14 +33,11 @@ const FirmList = () => {
   const [error, setError] = useState(null);
   const [filterText, setFilterText] = useState('');
 
-  // Modály a vybrané položky
+  // Modály a vybrané položky (Kontakty, Schůzky a Akce už se otevírají přes trasu)
   const [selectedFirm, setSelectedFirm] = useState(null);
   const [selectedFirmName, setSelectedFirmName] = useState(null);
-  const [selectedContact, setSelectedContact] = useState(null);
-  const [selectedMeet, setSelectedMeet] = useState(null);
   const [selectedGift, setSelectedGift] = useState(null);
   const [selectedPractice, setSelectedPractice] = useState(null);
-  const [selectedWS, setSelectedWS] = useState(null);
 
   // Výběr řádků
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -228,30 +222,15 @@ const FirmList = () => {
     }
   };
 
-  // Akce modálů
+  // Akce modálů / Přesměrování
   const handleEditClick = (firmId, name = null) => {
     setSelectedFirmName(name);
     setSelectedFirm(Number(firmId));
   };
 
-  const handleEditContactClick = (id, name) => {
-    setSelectedFirmName(name);
-    setSelectedContact(id);
-  };
-
-  const handleWorkshopListClick = (firmId, name) => {
-    setSelectedFirmName(name);
-    setSelectedWS(firmId);
-  };
-
   const handleGiftListClick = (id, name) => {
     setSelectedFirmName(name);
     setSelectedGift(id);
-  };
-
-  const handleEditMeetClick = (id, name) => {
-    setSelectedFirmName(name);
-    setSelectedMeet(id);
   };
 
   const handlePracticeListClick = (id) => {
@@ -372,39 +351,12 @@ const FirmList = () => {
         />
       )}
 
-      {selectedMeet && (
-        <MeetList
-          firmId={selectedMeet}
-          onSave={() => setSelectedMeet(null)}
-          firmName={selectedFirmName}
-          onClose={() => setSelectedMeet(null)}
-        />
-      )}
-
       {selectedPractice && (
         <PracticeList
           firmId={selectedPractice}
           onSave={() => setSelectedPractice(null)}
           firmName={selectedFirmName}
           onClose={() => setSelectedPractice(null)}
-        />
-      )}
-
-      {selectedWS && (
-        <WorkshopList
-          firmId={selectedWS}
-          onSave={() => setSelectedWS(null)}
-          firmName={selectedFirmName}
-          onClose={() => setSelectedWS(null)}
-        />
-      )}
-
-      {selectedContact && (
-        <ContactList
-          firmId={selectedContact}
-          onSave={fetchData}
-          firmName={getFirstPart(selectedFirmName)}
-          onClose={() => setSelectedContact(null)}
         />
       )}
 
@@ -568,19 +520,22 @@ const FirmList = () => {
 
                   <td>
                     <div className={isSmall ? 'small-resolution' : ''}>
-                      <button type="button" onClick={() => handleEditContactClick(row.id, row.name)}>
+                      <button 
+                        type="button" 
+                        onClick={() => navigate(`/firms/${row.id}/contacts`)}
+                      >
                         Kontakty
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleEditMeetClick(row.id, row.name)}
+                        onClick={() => navigate(`/firms/${row.id}/meets`)}
                         className="blue-btn"
                       >
                         Schůzky
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleWorkshopListClick(row.id, row.name)}
+                        onClick={() => navigate(`/firms/${row.id}/workshops`)}
                       >
                         Akce
                       </button>

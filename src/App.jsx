@@ -20,12 +20,14 @@ import Stats from './components/stats';
 import StatsByYears from './components/statsByYears';
 import StatsInvitations from './components/statsInvitations';
 import UrlProvider from './components/UrlProvider';
+import ContactList from './components/contactList';
+import MeetList from './components/meetList';
+import WorkshopList from './components/workshoplist';
 
 const AppContentInner = () => {
   const location = useLocation();
 
   useEffect(() => {
-    
     const params = new URLSearchParams(window.location.search);
     const user = params.get('user');
     if (user && window.location.hostname === 'localhost') {
@@ -34,15 +36,17 @@ const AppContentInner = () => {
 
     const appElement = document.querySelector('#app');
 
-    appElement.className = '';
+    if (appElement) {
+      appElement.className = '';
 
-    const kebabClass = location.pathname
-      .replace(/^\/|\/$/g, '') 
-      .replace(/([a-z])([A-Z])/g, '$1-$2')
-      .replace(/\//g, '-') 
-      .toLowerCase() || 'home';
+      const kebabClass = location.pathname
+        .replace(/^\/|\/$/g, '') 
+        .replace(/([a-z])([A-Z])/g, '$1-$2')
+        .replace(/\//g, '-') 
+        .toLowerCase() || 'home';
 
-    appElement.classList.add(kebabClass);
+      appElement.classList.add(kebabClass);
+    }
   }, [location]);
 
   return (
@@ -53,9 +57,10 @@ const AppContentInner = () => {
         <Route path="/firm" element={<FirmList />} />
         <Route path="/firm/:firmName" element={<FirmList />} />
 
-        <Route path="/firms/:firmId/contacts" element={<CampaignContactsList />} />
-        <Route path="/firms/:firmId/meets" element={<StatsInvitations />} />
-        <Route path="/firms/:firmId/workshops" element={<EventList />} />
+        {/* Nové trasy pro samostatné stránky Kontakty, Schůzky a Akce */}
+        <Route path="/firms/:id/contacts" element={<ContactList />} />
+        <Route path="/firms/:id/meets" element={<MeetList />} />
+        <Route path="/firms/:id/workshops" element={<WorkshopList />} />
 
         <Route path="/events" element={<EventList />} />
         <Route path="/events/:id" element={<EventList />} />
@@ -86,7 +91,6 @@ const AppContent = () => (
       <AppContentInner />
     </Auth401Guard>
   </BrowserRouter>
-
 );
 
 const App = () => (
