@@ -2,6 +2,7 @@
 import axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import EditColumnForm from './editColumnForm';
+import UniversalTable from './UniversalTable';
 import { useUrl } from './UrlProvider';
 
 const ColumnList = () => {
@@ -31,7 +32,7 @@ const ColumnList = () => {
     };
 
     fetchColumns();
-  }, []);
+  }, [apiUrl]);
 
   const deleteColumn = async (columnId) => {
     try {
@@ -54,6 +55,7 @@ const ColumnList = () => {
       deleteColumn(column.id);
     }
   };
+
   const handleEditClick = (column) => {
     console.log(column);
     setSelectedColumn(column);
@@ -72,9 +74,28 @@ const ColumnList = () => {
     }
     setSelectedColumn(null);
   };
+
   const handleClose = () => {
     setSelectedColumn(null);
   };
+
+  // Definice sloupců pro UniversalTable
+  const tableColumns = [
+    {
+      key: 'name',
+      label: (
+        <>
+          Název&nbsp;
+          <button type="button" onClick={() => handleEditClick({ id: '-1', name: '' })}>+</button>
+        </>
+      ),
+    },
+    {
+      key: 'type',
+      label: 'Typ',
+      render: (row) => types[row.type] || '',
+    },
+  ];
 
   if (loading) {
     return <p className="no-data">Načítání dat...</p>;
@@ -87,34 +108,23 @@ const ColumnList = () => {
       </p>
     );
   }
+
   return (
     <div>
       {selectedColumn ? (
         <EditColumnForm column={selectedColumn} onSave={handleSave} onClose={handleClose} />
       ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>
-                Název&nbsp;
-                <button type="button" onClick={() => handleEditClick({ id: '-1', name: '' })}>+</button>
-              </th>
-              <th>Typ</th>
-              <th />
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {columns.map((column) => (
-              <tr key={column.id}>
-                <td>{column.name}</td>
-                <td>{types[column.type]}</td>
-                <td><button type="button" onClick={() => handleEditClick(column)}>upravit</button></td>
-                <td><button type="button" onClick={() => handledelClick(column)} className="del-btn">smazat</button></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <UniversalTable
+          data={columns}
+          columns={tableColumns}
+          renderActions={(row) => (
+            <>
+              <button type="button" onClick={() => handleEditClick(row)}>upravit</button>
+              &nbsp;
+              <button type="button" onClick={() => handledelClick(row)} className="del-btn">smazat</button>
+            </>
+          )}
+        />
       )}
     </div>
   );

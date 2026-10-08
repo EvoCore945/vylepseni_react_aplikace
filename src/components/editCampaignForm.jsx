@@ -56,13 +56,14 @@ const CampaignForm = () => {
     } = e.target;
     console.log(options);
     if (type === 'select-multiple') {
+      // Extrahujeme pouze vybrané ID/hodnoty z options
       const selectedValues = Array.from(options)
-        .filter((option) => option.value !== 'main_recipient_id') // Remove main_recipient_id
-        .map((option) => option);
+        .filter((option) => option.value !== 'main_recipient_id')
+        .map((option) => option.value || option);
       console.log(selectedValues);
       setCampaign((prevState) => ({
         ...prevState,
-        [name]: selectedValues,
+        main_recipient_id: selectedValues,
         recipient_count: options.length,
       }));
     } else {
@@ -74,7 +75,11 @@ const CampaignForm = () => {
     console.log(campaign);
     e.preventDefault();
     const method = id ? 'put' : 'post';
-    const url = id ? `${apiUrl}/campaigns/${id}` : `${apiUrl}/campaigns/`;
+    // Odstraněna zdvojená lomítka při skládání URL
+    const url = id 
+      ? `${apiUrl.replace(/\/$/, '')}/campaigns/${id}` 
+      : `${apiUrl.replace(/\/$/, '')}/campaigns`;
+
     axios({
       method,
       url,
