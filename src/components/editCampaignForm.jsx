@@ -29,7 +29,9 @@ const CampaignForm = () => {
   const [firms, setFirms] = useState([]);
 
   useEffect(() => {
-    axios.get(`${apiUrl}firms/list`)
+    const cleanApiUrl = apiUrl.replace(/\/$/, '');
+
+    axios.get(`${cleanApiUrl}/firms/list`)
       .then((response) => {
         const cleanedData = response.data.map((firm) => ({
           ...firm,
@@ -40,13 +42,13 @@ const CampaignForm = () => {
       .catch((error) => console.error('Error fetching firms:', error));
 
     if (id) {
-      axios.get(`${apiUrl}campaign/${id}`)
+      axios.get(`${cleanApiUrl}/campaigns/${id}`)
         .then((response) => {
           setCampaign(response.data);
         })
         .catch((error) => console.error('Error fetching campaign:', error));
     }
-  }, [id]);
+  }, [apiUrl, id]);
 
   const handleChange = (e) => {
     console.log(e);
@@ -75,10 +77,12 @@ const CampaignForm = () => {
     console.log(campaign);
     e.preventDefault();
     const method = id ? 'put' : 'post';
-    // Odstraněna zdvojená lomítka při skládání URL
+    const cleanApiUrl = apiUrl.replace(/\/$/, '');
+    
+    // Bezpečné složení URL s jistotou správného oddělení lomítkem
     const url = id 
-      ? `${apiUrl.replace(/\/$/, '')}/campaigns/${id}` 
-      : `${apiUrl.replace(/\/$/, '')}/campaigns`;
+      ? `${cleanApiUrl}/campaigns/${id}` 
+      : `${cleanApiUrl}/campaigns`;
 
     axios({
       method,
@@ -164,7 +168,7 @@ const CampaignForm = () => {
           <label>Složený soubor:</label>
           <p style={{ display: 'inline-block' }}>
             {campaign.attachment_name && (
-              <a href={`${apiUrl}campaignAttachment/${campaign.id}`}>
+              <a href={`${apiUrl.replace(/\/$/, '')}/campaignAttachment/${campaign.id}`}>
                 {campaign.attachment_name}
               </a>
             )}
