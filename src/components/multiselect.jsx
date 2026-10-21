@@ -1,37 +1,67 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 import PropTypes from 'prop-types';
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 
-const MultiSelect = ({ options, selectedValues, onChange }) => {
-  const [selected, setSelected] = useState(selectedValues || []);
+const MultiSelect = ({
+  options = [],
+  selectedValues = [],
+  onChange,
+}) => {
+  const [selected, setSelected] = useState(
+    Array.isArray(selectedValues) ? selectedValues : [],
+  );
+
   const [filter, setFilter] = useState('');
 
   useEffect(() => {
-    setSelected(selectedValues);
+    setSelected(
+      Array.isArray(selectedValues) ? selectedValues : [],
+    );
   }, [selectedValues]);
+
+  const safeOptions = Array.isArray(options) ? options : [];
 
   const filterValues = filter
     .split(/;|\t/)
     .map((val) => val.trim().toLowerCase())
     .filter((val) => val.length > 0);
 
-  const filteredOptions = options.filter((option) => {
+  const filteredOptions = safeOptions.filter((option) => {
+    if (!option || typeof option.name !== 'string') {
+      return false;
+    }
+
     if (filterValues.length === 0) {
       return true;
     }
-    return filterValues.some((val) => option.name.toLowerCase().includes(val));
+
+    return filterValues.some((val) => (
+      option.name.toLowerCase().includes(val)
+    ));
   });
 
   const handleCheckboxChange = (event) => {
     const { value, checked } = event.target;
-    let updatedSelected = [...selected];
+
+    let updatedSelected = Array.isArray(selected)
+      ? [...selected]
+      : [];
+
     if (checked) {
-      updatedSelected.push(value);
+      if (!updatedSelected.includes(value)) {
+        updatedSelected.push(value);
+      }
     } else {
-      updatedSelected = updatedSelected.filter((item) => item !== value);
+      updatedSelected = updatedSelected.filter(
+        (item) => item !== value,
+      );
     }
+
     setSelected(updatedSelected);
-    onChange(updatedSelected);
+
+    if (typeof onChange === 'function') {
+      onChange(updatedSelected);
+    }
   };
 
   const handleFilterChange = (event) => {
@@ -39,10 +69,25 @@ const MultiSelect = ({ options, selectedValues, onChange }) => {
   };
 
   const handleSelectAllFiltered = () => {
-    const filteredIds = filteredOptions.map((option) => option.id);
-    const updatedSelected = Array.from(new Set([...selected, ...filteredIds]));
+    const currentSelected = Array.isArray(selected)
+      ? selected
+      : [];
+
+    const filteredIds = filteredOptions
+      .map((option) => String(option.id));
+
+    const updatedSelected = Array.from(
+      new Set([
+        ...currentSelected,
+        ...filteredIds,
+      ]),
+    );
+
     setSelected(updatedSelected);
-    onChange(updatedSelected);
+
+    if (typeof onChange === 'function') {
+      onChange(updatedSelected);
+    }
   };
 
   return (
@@ -64,25 +109,39 @@ const MultiSelect = ({ options, selectedValues, onChange }) => {
           onChange={handleFilterChange}
           placeholder="např. ja; ne; ty"
         />
-        <button type="button" onClick={handleSelectAllFiltered} style={{ marginLeft: '2.3em' }}>
+
+        <button
+          type="button"
+          onClick={handleSelectAllFiltered}
+          style={{ marginLeft: '2.3em' }}
+        >
           Zaškrtnout vše z vyfiltrovaných
         </button>
       </div>
 
-      {filteredOptions.map((option) => (
-        <div key={option.id}>
-          <label>
-            <input
-              type="checkbox"
-              name="multi-select[]"
-              value={option.id}
-              checked={selected.includes(option.id)}
-              onChange={handleCheckboxChange}
-            />
-            {option.name}
-          </label>
-        </div>
-      ))}
+      {filteredOptions.map((option) => {
+        const optionId = String(option.id);
+
+        return (
+          <div key={optionId}>
+            <label>
+              <input
+                type="checkbox"
+                name="multi-select[]"
+                value={optionId}
+                checked={(
+                  Array.isArray(selected)
+                    ? selected
+                    : []
+                ).includes(optionId)}
+                onChange={handleCheckboxChange}
+              />
+
+              {option.name}
+            </label>
+          </div>
+        );
+      })}
     </div>
   );
 };
@@ -90,12 +149,27 @@ const MultiSelect = ({ options, selectedValues, onChange }) => {
 MultiSelect.propTypes = {
   options: PropTypes.arrayOf(
     PropTypes.shape({
-      id: PropTypes.string.isRequired,
+      id: PropTypes.oneOfType([
+        PropTypes.string,
+        PropTypes.number,
+      ]).isRequired,
       name: PropTypes.string.isRequired,
     }),
-  ).isRequired,
-  selectedValues: PropTypes.arrayOf(PropTypes.string),
+  ),
+
+  selectedValues: PropTypes.arrayOf(
+    PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.number,
+    ]),
+  ),
+
   onChange: PropTypes.func.isRequired,
+};
+
+MultiSelect.defaultProps = {
+  options: [],
+  selectedValues: [],
 };
 
 export default MultiSelect;
